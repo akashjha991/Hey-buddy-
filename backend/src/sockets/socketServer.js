@@ -3,12 +3,19 @@ import redisAdapter from 'socket.io-redis';
 import { env } from '../config/env.js';
 import { verifyToken } from '../utils/auth.js';
 
+const redisConn = new URL(env.redisUrl || 'redis://127.0.0.1:6379');
+
 export const initSocketServer = (httpServer) => {
   const io = new Server(httpServer, {
-    cors: { origin: env.clientUrl, credentials: true }
+    cors: { origin: env.allowedOrigins, credentials: true }
   });
 
-  io.adapter(redisAdapter({ host: '127.0.0.1', port: 6379 }));
+  io.adapter(
+    redisAdapter({
+      host: redisConn.hostname,
+      port: Number(redisConn.port || 6379)
+    })
+  );
 
   io.use((socket, next) => {
     try {

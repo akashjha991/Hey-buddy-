@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 
+const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+
 export const RoomChat = ({ token, roomId }) => {
   const [socket, setSocket] = useState(null);
   const [message, setMessage] = useState('');
   const [feed, setFeed] = useState([]);
 
   useEffect(() => {
-    const s = io('http://localhost:5000', { auth: { token } });
+    const s = io(socketUrl, { auth: { token }, withCredentials: true });
     s.emit('join-room-chat', roomId);
     s.on('room-message', (payload) => setFeed((prev) => [...prev, payload]));
     setSocket(s);

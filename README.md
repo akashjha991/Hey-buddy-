@@ -4,139 +4,128 @@ Sports Buddy is a full-stack sports matchmaking platform built with:
 - **Backend:** Node.js + Express + MongoDB + Redis + Socket.io
 - **Frontend:** React + Vite
 
-It supports:
-- JWT register/login
-- user location updates
-- sports room creation (date/time, 1–5 km radius, slots)
-- nearby room search (MongoDB geospatial queries)
-- Redis caching, sessions, and rate-limiting
-- atomic room joins with Redis lock
-- realtime chat via Socket.io + Redis pub/sub adapter
-- room expiry with node-cron
-
 ---
 
-## 1) Prerequisites
+## Local Run (Quick)
 
-Install these on your machine:
-- Node.js 18+ (or 20+)
+### 1) Prerequisites
+- Node.js 18+
 - npm 9+
-- MongoDB (local or Atlas)
+- MongoDB
 - Redis
 
----
-
-## 2) Project setup
-
-From repo root:
-
+### 2) Setup
 ```bash
 cd backend
 cp .env.example .env
 ```
 
-Edit `backend/.env` with your values:
-
-```env
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/sports-buddy
-REDIS_URL=redis://127.0.0.1:6379
-JWT_SECRET=replace-with-a-strong-secret
-JWT_EXPIRES_IN=7d
-SESSION_SECRET=replace-with-a-strong-session-secret
-CLIENT_URL=http://localhost:5173
-```
-
-Install dependencies:
-
+Then install deps:
 ```bash
 cd backend && npm install
 cd ../frontend && npm install
 ```
 
----
-
-## 3) Run backend + frontend
-
-Terminal 1 (backend):
-
+### 3) Start
+Terminal 1:
 ```bash
 cd backend
 npm run dev
 ```
 
-Terminal 2 (frontend):
-
+Terminal 2:
 ```bash
 cd frontend
 npm run dev
 ```
 
-Open browser:
-
-- `http://localhost:5173`
+Open: `http://localhost:5173`
 
 ---
 
-## 4) What outcome you should see
+## Deploy Frontend on Vercel + Backend on Free Hosting
 
-1. **Auth screen** with register/login form.
-2. After login, **Dashboard** appears.
-3. Enter `lat` and `lon`, click **Update Location**.
-4. Fill room form and click **Create Room**.
-5. Click **Find Nearby** to list rooms close to your coordinates.
-6. Click **Join** on a room to join it.
-7. Joined room opens **Room Chat** and lets you send messages.
+Below is the easiest production setup:
+- **Frontend:** Vercel (free)
+- **Backend:** Render Web Service (free tier available; may spin down)
+- **Database:** MongoDB Atlas (free M0)
+- **Redis:** Upstash Redis (free)
 
----
+> You can also use Railway/Fly.io for backend if you prefer. Steps below use Render because it is straightforward.
 
-## 5) Quick API checks (optional)
+### A) Prepare managed services
+
+#### 1. MongoDB Atlas (free)
+1. Create Atlas cluster (M0 free).
+2. Create DB user and password.
+3. Whitelist IP (`0.0.0.0/0` for quick start, restrict later).
+4. Copy connection string and set as `MONGO_URI`.
+
+#### 2. Upstash Redis (free)
+1. Create Redis database.
+2. Copy Redis URL (`redis://...`) and set as `REDIS_URL`.
+
+### B) Deploy backend to Render
+
+1. Push repo to GitHub.
+2. In Render: **New > Web Service**.
+3. Connect repo.
+4. Settings:
+   - Runtime: **Node**
+   - Root Directory: `backend`
+   - Build Command: `npm install`
+   - Start Command: `npm start`
+5. Add Environment Variables:
+   - `PORT=5000`
+   - `NODE_ENV=production`
+   - `MONGO_URI=<atlas-uri>`
+   - `REDIS_URL=<upstash-redis-uri>`
+   - `JWT_SECRET=<strong-secret>`
+   - `JWT_EXPIRES_IN=7d`
+   - `SESSION_SECRET=<strong-secret>`
+   - `CLIENT_URL=<your-vercel-app-url>`
+   - `CLIENT_URLS=<your-vercel-app-url>,http://localhost:5173`
+6. Deploy and copy your backend URL, for example:
+   - `https://sports-buddy-api.onrender.com`
 
 Health check:
-
 ```bash
-curl http://localhost:5000/health
+curl https://sports-buddy-api.onrender.com/health
 ```
 
-Register:
+### C) Deploy frontend to Vercel
 
-```bash
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Alice","email":"alice@example.com","password":"password123"}'
-```
+1. In Vercel: **Add New > Project**.
+2. Import same GitHub repo.
+3. Set **Root Directory** to `frontend`.
+4. Framework preset: **Vite**.
+5. Add environment variables:
+   - `VITE_API_BASE_URL=https://sports-buddy-api.onrender.com/api`
+   - `VITE_SOCKET_URL=https://sports-buddy-api.onrender.com`
+6. Deploy.
 
-Login:
+### D) Final CORS alignment
 
-```bash
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"alice@example.com","password":"password123"}'
-```
+After Vercel gives your URL (example `https://sports-buddy.vercel.app`), update backend env in Render:
+- `CLIENT_URL=https://sports-buddy.vercel.app`
+- `CLIENT_URLS=https://sports-buddy.vercel.app,http://localhost:5173`
 
-Nearby rooms:
-
-```bash
-curl "http://localhost:5000/api/rooms/nearby?lat=12.9716&lon=77.5946&radiusKm=5"
-```
+Redeploy backend once after this change.
 
 ---
 
-## 6) Troubleshooting
+## Production Notes
 
-- **Port already used**
-  - Change frontend port in `frontend/vite.config.js` or backend `PORT` in `.env`.
-- **Mongo connection errors**
-  - Ensure MongoDB is running and URI is correct.
-- **Redis connection errors**
-  - Ensure Redis is running on the URL in `.env`.
-- **401 Unauthorized**
-  - Make sure Authorization header is `Bearer <token>` for protected routes.
+- Render free instances may sleep; first request can be slow.
+- Cookies are set with secure defaults in production (`secure` + `sameSite=none`).
+- Frontend now uses env-driven URLs:
+  - `VITE_API_BASE_URL`
+  - `VITE_SOCKET_URL`
+- Backend accepts multiple frontend origins from `CLIENT_URLS`.
 
 ---
 
-## 7) Important routes
-
+## Important API routes
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `PATCH /api/users/location` (JWT)

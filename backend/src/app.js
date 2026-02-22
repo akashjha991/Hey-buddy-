@@ -14,8 +14,14 @@ import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 
 const app = express();
 
+app.set('trust proxy', 1);
 app.use(helmet());
-app.use(cors({ origin: env.clientUrl, credentials: true }));
+app.use(
+  cors({
+    origin: env.allowedOrigins,
+    credentials: true
+  })
+);
 app.use(express.json());
 
 app.use(
@@ -34,7 +40,12 @@ app.use(
     secret: env.sessionSecret,
     saveUninitialized: false,
     resave: false,
-    cookie: { secure: false, httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000
+    }
   })
 );
 
