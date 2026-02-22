@@ -23,7 +23,7 @@ cp .env.example .env
 Then install deps:
 ```bash
 cd backend && npm install
-cd ../frontend && npm install
+cd .. && npm install
 ```
 
 ### 3) Start
@@ -35,7 +35,6 @@ npm run dev
 
 Terminal 2:
 ```bash
-cd frontend
 npm run dev
 ```
 
@@ -97,12 +96,11 @@ curl https://sports-buddy-api.onrender.com/health
 
 1. In Vercel: **Add New > Project**.
 2. Import same GitHub repo.
-3. Set **Root Directory** to `frontend`.
-4. Framework preset: **Vite**.
-5. Add environment variables:
+3. Framework preset: **Vite**.
+4. Add environment variables:
    - `VITE_API_BASE_URL=https://sports-buddy-api.onrender.com/api`
    - `VITE_SOCKET_URL=https://sports-buddy-api.onrender.com`
-6. Deploy.
+5. Deploy.
 
 ### D) Final CORS alignment
 
